@@ -7,6 +7,7 @@ import (
 	"zion/event"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/ylywyn/jpush-api-go-client"
 )
 
 func FeedHandler(msg *consumer.Message) {
@@ -48,7 +49,7 @@ func createFeed(feedEvent *event.FeedEvent) {
 	if err != nil {
 		log.Errorln(err)
 	}
-	log.Infoln("create feed ", feedEvent.Feed.FeedId)
+	log.Infoln("create feed", feedEvent.Feed.FeedId)
 }
 
 func removeFeed(feedEvent *event.FeedEvent) {
@@ -65,7 +66,7 @@ func removeFeed(feedEvent *event.FeedEvent) {
 	if err != nil {
 		log.Errorln(err)
 	}
-	log.Infoln("remove feed ", feedEvent.FeedId)
+	log.Infoln("remove feed", feedEvent.FeedId)
 }
 
 func createComment(feedEvent *event.FeedEvent) {
@@ -81,7 +82,54 @@ func createComment(feedEvent *event.FeedEvent) {
 	if err != nil {
 		log.Errorln(err)
 	}
-	log.Infoln("create comment ", feedEvent.Comment.CommentId)
+	log.Infoln("create comment", feedEvent.Comment.CommentId)
+
+	go func() {
+		//Create session for every request
+		session := mgoSession.Copy()
+		defer session.Close()
+
+		var pf jpushclient.Platform
+		pf.Add(jpushclient.ANDROID)
+		pf.Add(jpushclient.IOS)
+
+		var ad jpushclient.Audience
+		var notice jpushclient.Notice
+		var option jpushclient.Option
+		option.ApnsProduction = true
+		if feedEvent.Comment.Reference != nil {
+			s := []string{feedEvent.Comment.Reference.UserId.Hex()}
+			ad.SetAlias(s)
+			notice.SetAlert(fmt.Sprintf("%s 回复你的评论：%s", feedEvent.Comment.Author.NickName, feedEvent.Comment.Content))
+		} else {
+			// feed, err := db.GetFeedById(session, feedEvent.Comment.FeedId)
+			// if err != nil {
+			// 	log.Errorln("评论失败")
+			// }
+			// s := []string{feed.UserId.Hex()}
+			// ad.SetAlias(s)
+			ad.All()
+			notice.SetAlert(fmt.Sprintf("%s 回复了你的发布：%s", feedEvent.Comment.Author.NickName, feedEvent.Comment.Content))
+		}
+		payload := jpushclient.NewPushPayLoad()
+		payload.SetPlatform(&pf)
+		payload.SetAudience(&ad)
+		payload.SetNotice(&notice)
+		payload.SetOptions(&option)
+
+		log.Infoln(payload)
+
+		bytes, _ := payload.ToBytes()
+
+		c := jpushclient.NewPushClient(configuration.JPush.Secret, configuration.JPush.AppKey)
+		log.Infoln(c)
+		str, err := c.Send(bytes)
+		if err != nil {
+			log.Errorln(err)
+		} else {
+			log.Infoln("推送成功：", str)
+		}
+	}()
 }
 
 func removeComment(feedEvent *event.FeedEvent) {
@@ -97,5 +145,5 @@ func removeComment(feedEvent *event.FeedEvent) {
 	if err != nil {
 		log.Errorln(err)
 	}
-	log.Infoln("remove comment ", feedEvent.CommentId)
+	log.Infoln("remove comment", feedEvent.CommentId)
 }

@@ -14,8 +14,7 @@ var (
 
 func init() {
 	var (
-		err           error
-		configuration config.Config
+		err error
 	)
 
 	configuration = config.New()
