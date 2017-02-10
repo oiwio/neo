@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"matrix/producer"
 	"neo/config"
 
 	mgo "gopkg.in/mgo.v2"
@@ -19,7 +18,7 @@ func init() {
 
 	configuration = config.New()
 
-	producer.Connect(configuration.NSQ.Host)
+	// consumer.Connect(configuration.NSQ.Host)
 
 	mgoSession, err = mgo.Dial(configuration.MongoDB.Host)
 	if err != nil {
