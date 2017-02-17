@@ -6,7 +6,6 @@ import (
 	"zion/db"
 	"zion/event"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/ylywyn/jpush-api-go-client"
 )
 

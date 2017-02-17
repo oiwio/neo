@@ -1,5 +1,8 @@
 title="System Config File"
 
+[Log]
+logPath="./log/neo.log"
+
 [MongoDB]
 host = "127.0.0.1"
 

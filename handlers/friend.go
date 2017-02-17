@@ -4,8 +4,6 @@ import (
 	"neo/consumer"
 	"zion/db"
 	"zion/event"
-
-	log "github.com/Sirupsen/logrus"
 )
 
 func FriendHandler(msg *consumer.Message) {
