@@ -5,8 +5,7 @@ import (
 	"neo/consumer"
 	"zion/db"
 	"zion/event"
-
-	"github.com/ylywyn/jpush-api-go-client"
+	"zion/push"
 )
 
 func FeedHandler(msg *consumer.Message) {
@@ -70,7 +69,10 @@ func removeFeed(feedEvent *event.FeedEvent) {
 
 func createComment(feedEvent *event.FeedEvent) {
 	var (
-		err error
+		err     error
+		users   []string
+		content string
+		str     string
 	)
 
 	//Create session for every request
@@ -88,41 +90,18 @@ func createComment(feedEvent *event.FeedEvent) {
 		session := mgoSession.Copy()
 		defer session.Close()
 
-		var pf jpushclient.Platform
-		pf.Add(jpushclient.ANDROID)
-		pf.Add(jpushclient.IOS)
-
-		var ad jpushclient.Audience
-		var notice jpushclient.Notice
-		var option jpushclient.Option
-		option.ApnsProduction = true
 		if feedEvent.Comment.Reference != nil {
-			s := []string{feedEvent.Comment.Reference.UserId.Hex()}
-			ad.SetAlias(s)
-			notice.SetAlert(fmt.Sprintf("%s 回复你的评论：%s", feedEvent.Comment.Author.NickName, feedEvent.Comment.Content))
+			users = []string{feedEvent.Comment.Reference.UserId.Hex()}
+			content = fmt.Sprintf("%s 回复你的评论：%s", feedEvent.Comment.Author.NickName, feedEvent.Comment.Content)
 		} else {
-			// feed, err := db.GetFeedById(session, feedEvent.Comment.FeedId)
-			// if err != nil {
-			// 	log.Errorln("评论失败")
-			// }
-			// s := []string{feed.UserId.Hex()}
-			// ad.SetAlias(s)
-			ad.All()
-			notice.SetAlert(fmt.Sprintf("%s 回复了你的发布：%s", feedEvent.Comment.Author.NickName, feedEvent.Comment.Content))
+			feed, err := db.GetFeedById(session, feedEvent.Comment.FeedId)
+			if err != nil {
+				log.Errorln("评论失败")
+			}
+			users = []string{feed.UserId.Hex()}
+			content = fmt.Sprintf("%s 回复了你的发布：%s", feedEvent.Comment.Author.NickName, feedEvent.Comment.Content)
 		}
-		payload := jpushclient.NewPushPayLoad()
-		payload.SetPlatform(&pf)
-		payload.SetAudience(&ad)
-		payload.SetNotice(&notice)
-		payload.SetOptions(&option)
-
-		log.Infoln(payload)
-
-		bytes, _ := payload.ToBytes()
-
-		c := jpushclient.NewPushClient(configuration.JPush.Secret, configuration.JPush.AppKey)
-		log.Infoln(c)
-		str, err := c.Send(bytes)
+		str, err = push.JpushWithUserIds(users, content)
 		if err != nil {
 			log.Errorln(err)
 		} else {

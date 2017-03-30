@@ -19,6 +19,7 @@ func init() {
 func main() {
 	consumer.Register("feed", "consume", 30, handlers.FeedHandler)
 	consumer.Register("friend", "consume", 30, handlers.FriendHandler)
+	consumer.Register("tag", "consume", 30, handlers.TagHandler)
 	consumer.Connect(configuration.NSQ.Host)
 	consumer.Start(true)
 }
