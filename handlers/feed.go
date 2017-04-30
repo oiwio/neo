@@ -6,6 +6,8 @@ import (
 	"zion/db"
 	"zion/event"
 	"zion/push"
+
+	"gopkg.in/mgo.v2/bson"
 )
 
 func FeedHandler(msg *consumer.Message) {
@@ -48,6 +50,13 @@ func createFeed(feedEvent *event.FeedEvent) {
 		log.Errorln(err)
 	}
 	log.Infoln("create feed", feedEvent.Feed.FeedId)
+}
+
+func pushFeedtoFollowedUsers(userId bson.ObjectId) error {
+	var (
+		err error
+	)
+	return err
 }
 
 func removeFeed(feedEvent *event.FeedEvent) {
